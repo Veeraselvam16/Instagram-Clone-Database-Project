@@ -1,0 +1,148 @@
+USE IG_CLONE ;
+/* 1] Create an ER diagram or draw a schema for the given database. */
+
+ /* SELECT DATABASE > REVERSE ENGINEER > NEXT > NEXT > SELECT THE DATABASE WE WANT > NEXT > NEXT > EXECUTE >
+     NEXT >  FINISH AT THE END.
+     
+ WE CAN SEE THE ENTITY RELATIONSHIP DIAGRAM.    */
+
+/* 2] We want to reward the user who has been around the longest, Find the 5 oldest users. */
+
+SELECT * FROM USERS;
+
+CREATE VIEW REWARDED_USERS AS
+(SELECT USERNAME AS OLDEST_USER 
+FROM USERS
+GROUP BY 1
+ORDER BY CREATED_AT ASC
+LIMIT 5);
+SELECT OLDEST_USER FROM REWARDED_USERS;
+
+DROP VIEW REWARDED_USERS;
+
+/* 3] To target inactive users in an email ad campaign, find the users who have never posted a photo. */
+
+SELECT * FROM USERS;
+SELECT * FROM PHOTOS;
+
+SELECT
+CASE 
+WHEN USERNAME = 0 THEN 'INACTIVE'
+ELSE 'ACTIVE'
+END AS NEVER_POSTED_PHOTO
+FROM USERS
+WHERE USERS.ID IN 
+(SELECT PHOTOS.ID FROM PHOTOS
+WHERE PHOTOS.IMAGE_URL = 0);
+
+/* 4] Suppose you are running a contest to find out who got the most likes on a photo. 
+      Find out who won? */
+
+SELECT * FROM USERS;
+SELECT * FROM PHOTOS; 
+SELECT * FROM LIKES; 
+
+CREATE TABLE MOST_LIKED_PHOTOS AS
+(SELECT LIKES.USER_ID,USERNAME, SUM(LIKES.PHOTO_ID) AS LIKES
+FROM LIKES
+INNER JOIN PHOTOS ON LIKES.USER_ID = PHOTOS.USER_ID
+INNER JOIN USERS ON PHOTOS.ID = USERS.ID
+GROUP BY 1,2
+ORDER BY LIKES DESC);
+
+SELECT USERNAME AS WINNER 
+FROM MOST_LIKED_PHOTOS
+LIMIT 1 ;
+
+DROP TABLE MOST_LIKED_PHOTOS ;
+
+/* 5] The investors want to know how many times does the average user post. */
+
+SELECT * FROM USERS ;
+SELECT * FROM PHOTOS;
+
+SELECT AVG(COUNTS) AS AVG_USER_POST FROM 
+(SELECT USER_ID,COUNT(USERNAME) AS COUNTS 
+FROM USERS
+INNER JOIN PHOTOS ON USERS.ID = PHOTOS.ID
+GROUP BY 1) USERS;
+ 
+/* 6] A brand wants to know which hashtag to use on a post, and find the top 5 most used hashtags. */
+
+SELECT * FROM TAGS;
+SELECT * FROM  COMMENTS;   -- COMMOM COLUMN --
+SELECT * FROM PHOTO_TAGS;
+
+SELECT TAGS.TAG_NAME AS HASHTAGS_TO_USE
+FROM  TAGS
+WHERE TAGS.ID IN 
+(SELECT COMMENTS.ID FROM COMMENTS
+INNER JOIN PHOTO_TAGS ON COMMENTS.PHOTO_ID = PHOTO_TAGS.PHOTO_ID
+GROUP BY 1
+ORDER BY 1 ASC)
+LIMIT 5;
+
+/* 7] To find out if there are bots, find users who have liked every single photo on the site. */
+
+SELECT * FROM LIKES;
+SELECT * FROM PHOTOS;
+SELECT * FROM USERS;
+
+CREATE TEMPORARY TABLE  ALL_LIKED_PHOTO AS
+(SELECT  USERS.USERNAME, COUNT(DISTINCT PHOTO_ID) AS LIKEDPHOTO 
+FROM LIKES
+INNER JOIN PHOTOS ON PHOTOS.USER_ID = LIKES.USER_ID
+INNER JOIN USERS ON PHOTOS.ID = USERS.ID
+GROUP BY 1);
+
+SELECT USERNAME AS BOTS
+FROM ALL_LIKED_PHOTO;
+
+/* 8] Find the users who have created instagramid in may and select top 5 newest joinees from it? */
+
+SELECT * FROM USERS; 
+
+WITH NEW_FIVE_JOINEES AS 
+(SELECT CREATED_AT, USERNAME FROM USERS
+WHERE MONTHNAME(CREATED_AT) ='MAY')
+SELECT USERNAME AS INSTRAGRAM_ID_IN_MAY
+FROM NEW_FIVE_JOINEES
+ORDER BY 1 DESC
+LIMIT 5; 
+
+/* 9] Can you help me find the users whose name starts with c and ends with any number 
+	  and have posted the photos as well as liked the photos? */
+
+SELECT * FROM USERS;
+SELECT * FROM LIKES;
+SELECT * FROM PHOTOS;
+
+WITH NAME_WITH_C AS 
+(SELECT ID,USERNAME FROM USERS
+WHERE USERNAME REGEXP '^C.*[1-9]$'),
+LIKED_PHOTOS AS
+(SELECT PHOTOS.ID AS POST_PHOTOS ,LIKES.USER_ID AS LIKES,USERNAME
+FROM LIKES
+INNER JOIN PHOTOS ON LIKES.USER_ID = PHOTOS.USER_ID
+INNER JOIN NAME_WITH_C ON PHOTOS.ID = NAME_WITH_C.ID)
+SELECT USERNAME,POST_PHOTOS,LIKES FROM LIKED_PHOTOS
+GROUP BY 1;
+
+-- 10] Demonstrate the top 30 usernames to the company who have posted photos in the range of 3 to 5. --
+
+SELECT*FROM USERS;
+SELECT*FROM PHOTOS;
+
+DELIMITER // 
+CREATE PROCEDURE TOP30USERS_WITH_PHOTOS()
+BEGIN
+SELECT USERS.USERNAME AS TOP_30USERS, COUNT(PHOTOS.ID) AS total_photos    
+FROM USERS                                                  
+INNER JOIN PHOTOS ON USERS.ID = PHOTOS.USER_ID              -- FOREIGN KEY(user_id) REFERENCES users(id)
+GROUP BY USERS.ID, USERS.USERNAME                           -- foreign key, stores the user’s id for each photo.
+HAVING COUNT(PHOTOS.ID) BETWEEN 3 AND 5                     -- they don’t have the same name, but they store the same type of data.
+ORDER BY 2 DESC, 1 ASC                                      -- That’s why we can match them in a JOIN
+LIMIT 30;
+END //
+
+CALL TOP30USERS_WITH_PHOTOS();
