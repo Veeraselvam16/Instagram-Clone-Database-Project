@@ -55,3 +55,4 @@ LIMIT 5;
 - ✅ Demonstrates **realistic SQL queries** for analytics  
 - ✅ Showcases **data modeling** with ER diagrams  
 - ✅ Useful for learning **MySQL joins, subqueries, and views**  
+
