@@ -1,4 +1,4 @@
-# 📸 Instagram Clone Database Project
+# 📸 Instagram Clone Database Analysis
 
 This project is a **mini Instagram clone database** built using **MySQL**.  
 It demonstrates core social media features such as users, photos, likes, comments, follows, and hashtags.  
